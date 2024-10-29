@@ -19,25 +19,22 @@ public class ForecastService {
     }
 
     public double predictNextDayClosePrice(String symbol, String category) {
-        // Получаем данные по цене закрытия для указанного символа и категории
         List<FinancialData> financialDataList = financialDataRepository.findBySymbolAndCategory(symbol, category);
 
         if (financialDataList.isEmpty()) {
             throw new IllegalArgumentException("Данные для прогнозирования не найдены.");
         }
 
-        // Создаем линейную регрессию
         SimpleRegression regression = new SimpleRegression();
 
-        // Добавляем данные в модель регрессии (используем дату как независимую переменную, цену закрытия как зависимую)
         for (int i = 0; i < financialDataList.size(); i++) {
             FinancialData data = financialDataList.get(i);
-            regression.addData(i, data.getClosePrice()); // Используем индекс как временную метку
+            regression.addData(i, data.getClosePrice());
         }
 
-        // Прогнозируем цену закрытия на следующий день
         double nextDayIndex = financialDataList.size();
         return regression.predict(nextDayIndex);
     }
 }
+
 
