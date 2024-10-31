@@ -13,6 +13,8 @@ import kong.unirest.JsonNode;
 import kong.unirest.Unirest;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -46,26 +48,35 @@ public class ForecastService {
         return regression.predict(nextDayIndex);
     }
 
-    public double predictWithARIMA(String symbol, String category) {
+    public double predictWithLSTM(String symbol, String category) {
         List<FinancialData> financialDataList = financialDataRepository.findBySymbolAndCategory(symbol, category);
 
-        // Извлекаем только закрытые цены
-        List<Double> closePrices = financialDataList.stream()
-                .map(FinancialData::getClosePrice)
-                .toList();
+        // Создаем JSON массив данных
+        JSONArray dataArray = new JSONArray();
+        for (FinancialData data : financialDataList) {
+            JSONObject dataPoint = new JSONObject();
+            dataPoint.put("open", data.getOpenPrice());
+            dataPoint.put("high", data.getHighPrice());
+            dataPoint.put("low", data.getLowPrice());
+            dataPoint.put("close", data.getClosePrice());
+            dataPoint.put("volume", data.getVolume());
+            dataArray.put(dataPoint);
+        }
 
-        // Формируем JSON строку с закрытыми ценами
-        String jsonData = "{\"data\": " + closePrices.toString() + "}";
+        // Формируем окончательный JSON объект
+        JSONObject jsonData = new JSONObject();
+        jsonData.put("data", dataArray);
 
-        logger.info("JSON Data to be sent: {}", jsonData);
+        logger.info("JSON Data to be sent: {}", jsonData.toString());
 
+        // Отправляем JSON объект через Unirest
         HttpResponse<JsonNode> response = Unirest.post("http://localhost:8000/forecast")
                 .header("Content-Type", "application/json")
-                .body(jsonData)
+                .body(jsonData.toString())
                 .asJson();
 
         if (response.getStatus() != 200) {
-            throw new RuntimeException("Ошибка при вызове ARIMA API: " + response.getBody());
+            throw new RuntimeException("Ошибка при вызове LSTM API: " + response.getBody());
         }
 
         return response.getBody().getObject().getDouble("forecast");

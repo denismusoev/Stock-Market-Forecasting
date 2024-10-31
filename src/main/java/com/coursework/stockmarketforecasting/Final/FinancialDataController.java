@@ -29,7 +29,7 @@ public class FinancialDataController {
     @GetMapping("/predict/{symbol}/{category}")
     public double predictNextDayClosePrice(@PathVariable String symbol, @PathVariable String category) {
 //        return forecastService.predictNextDayClosePrice(symbol, category);
-        return forecastService.predictWithARIMA(symbol, category);
+        return forecastService.predictWithLSTM(symbol, category);
     }
 }
 
